@@ -10,6 +10,19 @@ import { fileURLToPath } from 'node:url'
 
 import { ImageProcessor } from './processors/image/processor'
 import { WebpConverter } from './processors/image/formats/webp'
+import { ResizeOperation } from './operations/image/resize'
+import { EffectsOperation, EFFECT_LIST } from './operations/image/effects'
+import { ThumbnailOperation } from './operations/image/thumbnail'
+import { isAvailable as imAvailable } from './engines/imagemagick'
+import { isAvailable as ffAvailable, convertVideo, extractFrames, getVideoInfo } from './engines/ffmpeg'
+import { VideoConvertOperation } from './operations/video/convert'
+import { FrameExtractOperation } from './operations/video/frames'
+import { isAvailable as loAvailable } from './engines/libreoffice'
+import { DocConvertOperation } from './operations/document/convert'
+import type { ResizeOptions } from './types'
+import type { EffectOpts } from './engines/imagemagick'
+import type { VideoConvertOpts, FrameExtractOpts } from './engines/ffmpeg'
+import type { DocConvertOpts } from './engines/libreoffice'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -33,6 +46,19 @@ const upload = multer({
   dest: path.join(UPLOAD_DIR, 'tmp'),
   limits: { fileSize: 100 * 1024 * 1024 },
 })
+
+function processResults(
+  results: Array<{ success: boolean; inputPath: string; outputPath: string; inputSize?: number; outputSize?: number; duration?: number; error?: string }>,
+  inputNames: string[],
+  sessionId: string,
+) {
+  return results.map((r, i) => ({
+    ...r,
+    originalName: inputNames[i],
+    outputName: path.basename(r.outputPath),
+    downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(path.basename(r.outputPath))}`,
+  }))
+}
 
 app.post('/api/upload', upload.array('files'), async (req, res) => {
   try {
@@ -121,21 +147,408 @@ app.post('/api/convert', async (req, res) => {
   }
 })
 
-app.get('/api/download/:sessionId/:filename', async (req, res) => {
+app.post('/api/resize', async (req, res) => {
   try {
-    const { sessionId, filename } = req.params
-    const filePath = path.join(UPLOAD_DIR, sessionId, 'output', filename)
+    const body = req.body as {
+      sessionId: string
+      width?: number
+      height?: number
+      fit?: string
+      withoutEnlargement?: boolean
+      format?: string
+      quality?: number
+    }
 
-    if (!existsSync(filePath)) {
-      res.status(404).json({ error: 'File not found' })
+    const { sessionId, width, height, fit, withoutEnlargement, format } = body
+    const quality = body.quality ?? 85
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' })
       return
     }
 
-    const decoded = decodeURIComponent(filename)
-    res.setHeader('Content-Disposition', `attachment; filename="${decoded}"`)
-    createReadStream(filePath).pipe(res)
+    if (!width && !height) {
+      res.status(400).json({ error: 'At least one of width or height is required' })
+      return
+    }
+
+    const inputDir = path.join(UPLOAD_DIR, sessionId, 'input')
+    const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
+
+    if (!existsSync(inputDir)) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    await fs.mkdir(outputDir, { recursive: true })
+
+    const operation = new ResizeOperation()
+    const inputFiles = await fs.readdir(inputDir)
+
+    if (inputFiles.length === 0) {
+      res.status(400).json({ error: 'No files to resize' })
+      return
+    }
+
+    const names: string[] = []
+    const results = []
+
+    for (const filename of inputFiles) {
+      const inputPath = path.join(inputDir, filename)
+      const stat = await fs.stat(inputPath)
+      if (!stat.isFile()) continue
+
+      const outputName = filename.replace(/\.[^.]+$/, `.${format || path.extname(filename).slice(1)}`)
+      const outputPath = path.join(outputDir, outputName)
+      names.push(filename)
+
+      const options: ResizeOptions = {
+        width: width ? Number(width) : undefined,
+        height: height ? Number(height) : undefined,
+        fit: fit as ResizeOptions['fit'],
+        withoutEnlargement,
+        format,
+        quality,
+      }
+
+      const result = await operation.execute(inputPath, outputPath, options)
+      results.push({
+        ...result,
+        originalName: filename,
+        outputName,
+        downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(outputName)}`,
+      })
+    }
+
+    res.json({ sessionId, results })
   } catch (error) {
     res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/effects', async (req, res) => {
+  try {
+    const { sessionId, effect, radius, sigma, amount, threshold } = req.body as {
+      sessionId: string
+      effect: string
+      radius?: number
+      sigma?: number
+      amount?: number
+      threshold?: number
+    }
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' })
+      return
+    }
+    if (!effect) {
+      res.status(400).json({ error: 'effect is required' })
+      return
+    }
+
+    const inputDir = path.join(UPLOAD_DIR, sessionId, 'input')
+    const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
+
+    if (!existsSync(inputDir)) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    if (!(await imAvailable())) {
+      res.status(400).json({ error: 'ImageMagick not installed. See https://imagemagick.org' })
+      return
+    }
+
+    await fs.mkdir(outputDir, { recursive: true })
+
+    const operation = new EffectsOperation()
+    const inputFiles = await fs.readdir(inputDir)
+    if (inputFiles.length === 0) {
+      res.status(400).json({ error: 'No files to process' })
+      return
+    }
+
+    const results = []
+    for (const filename of inputFiles) {
+      const inputPath = path.join(inputDir, filename)
+      const stat = await fs.stat(inputPath)
+      if (!stat.isFile()) continue
+
+      const ext = path.extname(filename)
+      const outputName = `${path.parse(filename).name}-${effect}${ext}`
+      const outputPath = path.join(outputDir, outputName)
+
+      const opts: EffectOpts = { effect: effect as EffectOpts['effect'], radius, sigma, amount, threshold }
+      const result = await operation.execute(inputPath, outputPath, opts)
+      results.push({
+        ...result,
+        originalName: filename,
+        outputName,
+        downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(outputName)}`,
+      })
+    }
+
+    res.json({ sessionId, results })
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/thumbnail', async (req, res) => {
+  try {
+    const { sessionId, size = 150, quality } = req.body as {
+      sessionId: string
+      size?: number
+      quality?: number
+    }
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' })
+      return
+    }
+
+    const inputDir = path.join(UPLOAD_DIR, sessionId, 'input')
+    const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
+
+    if (!existsSync(inputDir)) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    if (!(await imAvailable())) {
+      res.status(400).json({ error: 'ImageMagick not installed. See https://imagemagick.org' })
+      return
+    }
+
+    await fs.mkdir(outputDir, { recursive: true })
+
+    const operation = new ThumbnailOperation()
+    const inputFiles = await fs.readdir(inputDir)
+    if (inputFiles.length === 0) {
+      res.status(400).json({ error: 'No files to process' })
+      return
+    }
+
+    const results = []
+    for (const filename of inputFiles) {
+      const inputPath = path.join(inputDir, filename)
+      const stat = await fs.stat(inputPath)
+      if (!stat.isFile()) continue
+
+      const ext = path.extname(filename)
+      const outputName = `${path.parse(filename).name}-thumb${ext}`
+      const outputPath = path.join(outputDir, outputName)
+
+      const result = await operation.execute(inputPath, outputPath, { size, quality })
+      results.push({
+        ...result,
+        originalName: filename,
+        outputName,
+        downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(outputName)}`,
+      })
+    }
+
+    res.json({ sessionId, results })
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/video/convert', async (req, res) => {
+  try {
+    const { sessionId, format, videoCodec, audioCodec, bitrate, fps, resolution } = req.body as {
+      sessionId: string
+    } & VideoConvertOpts
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' })
+      return
+    }
+
+    const inputDir = path.join(UPLOAD_DIR, sessionId, 'input')
+    const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
+
+    if (!existsSync(inputDir)) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    if (!(await ffAvailable())) {
+      res.status(400).json({ error: 'FFmpeg not installed. See https://ffmpeg.org' })
+      return
+    }
+
+    await fs.mkdir(outputDir, { recursive: true })
+
+    const operation = new VideoConvertOperation()
+    const inputFiles = await fs.readdir(inputDir)
+    if (inputFiles.length === 0) {
+      res.status(400).json({ error: 'No files to process' })
+      return
+    }
+
+    const results = []
+    for (const filename of inputFiles) {
+      const inputPath = path.join(inputDir, filename)
+      const stat = await fs.stat(inputPath)
+      if (!stat.isFile()) continue
+
+      const ext = format ? `.${format}` : path.extname(filename)
+      const outputName = `${path.parse(filename).name}-converted${ext}`
+      const outputPath = path.join(outputDir, outputName)
+
+      const opts: VideoConvertOpts = { format, videoCodec, audioCodec, bitrate, fps, resolution }
+      const result = await operation.execute(inputPath, outputPath, opts)
+      results.push({
+        ...result,
+        originalName: filename,
+        outputName,
+        downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(outputName)}`,
+      })
+    }
+
+    res.json({ sessionId, results })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/video/frames', async (req, res) => {
+  try {
+    const { sessionId, fps, count, quality } = req.body as {
+      sessionId: string
+    } & FrameExtractOpts
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' })
+      return
+    }
+
+    const inputDir = path.join(UPLOAD_DIR, sessionId, 'input')
+    const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
+
+    if (!existsSync(inputDir)) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    if (!(await ffAvailable())) {
+      res.status(400).json({ error: 'FFmpeg not installed. See https://ffmpeg.org' })
+      return
+    }
+
+    await fs.mkdir(outputDir, { recursive: true })
+
+    const operation = new FrameExtractOperation()
+    const inputFiles = await fs.readdir(inputDir)
+    if (inputFiles.length === 0) {
+      res.status(400).json({ error: 'No files to process' })
+      return
+    }
+
+    const results = []
+    for (const filename of inputFiles) {
+      const inputPath = path.join(inputDir, filename)
+      const stat = await fs.stat(inputPath)
+      if (!stat.isFile()) continue
+
+      const base = path.parse(filename).name
+      const outputPattern = path.join(outputDir, `${base}-frame-%04d.jpg`)
+
+      const opts: FrameExtractOpts = { fps, count, quality }
+      const result = await operation.execute(inputPath, outputPattern, opts)
+      results.push({
+        ...result,
+        originalName: filename,
+        outputName: `${base}-frame-*.jpg`,
+        downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(`${base}-frame-*.jpg`)}`,
+      })
+    }
+
+    res.json({ sessionId, results })
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/document/convert', async (req, res) => {
+  try {
+    const { sessionId, format, filterName } = req.body as {
+      sessionId: string
+    } & DocConvertOpts
+
+    if (!sessionId) {
+      res.status(400).json({ error: 'sessionId is required' })
+      return
+    }
+    if (!format) {
+      res.status(400).json({ error: 'format is required' })
+      return
+    }
+
+    const inputDir = path.join(UPLOAD_DIR, sessionId, 'input')
+    const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
+
+    if (!existsSync(inputDir)) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    if (!(await loAvailable())) {
+      res.status(400).json({ error: 'LibreOffice not installed. See https://libreoffice.org' })
+      return
+    }
+
+    await fs.mkdir(outputDir, { recursive: true })
+
+    const operation = new DocConvertOperation()
+    const inputFiles = await fs.readdir(inputDir)
+    if (inputFiles.length === 0) {
+      res.status(400).json({ error: 'No files to process' })
+      return
+    }
+
+    const results = []
+    for (const filename of inputFiles) {
+      const inputPath = path.join(inputDir, filename)
+      const stat = await fs.stat(inputPath)
+      if (!stat.isFile()) continue
+
+      const base = path.parse(filename).name
+      const outputName = `${base}.${format}`
+      const outputPath = path.join(outputDir, outputName)
+
+      const opts: DocConvertOpts = { format, filterName }
+      const result = await operation.execute(inputPath, outputPath, opts)
+      results.push({
+        ...result,
+        originalName: filename,
+        outputName,
+        downloadUrl: `/api/download/${sessionId}/${encodeURIComponent(outputName)}`,
+      })
+    }
+
+    res.json({ sessionId, results })
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.get('/api/download/:sessionId/:filename', async (req, res) => {
+  try {
+    const { sessionId, filename } = req.params
+    const decoded = decodeURIComponent(filename)
+    const filePath = path.join(UPLOAD_DIR, sessionId, 'output', decoded)
+
+    if (!existsSync(filePath)) {
+      res.status(404).type('text').send('File not found')
+      return
+    }
+
+    res.download(filePath, decoded)
+  } catch {
+    res.status(500).type('text').send('Download failed')
   }
 })
 
@@ -145,25 +558,26 @@ app.get('/api/download-all/:sessionId', async (req, res) => {
     const outputDir = path.join(UPLOAD_DIR, sessionId, 'output')
 
     if (!existsSync(outputDir)) {
-      res.status(404).json({ error: 'No converted files found' })
+      res.status(404).type('text').send('No files found')
       return
     }
 
     const files = await fs.readdir(outputDir)
     if (files.length === 0) {
-      res.status(404).json({ error: 'No converted files found' })
+      res.status(404).type('text').send('No files found')
       return
     }
 
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', `attachment; filename="converted-${sessionId.slice(0, 8)}.zip"`)
+    res.setHeader('Content-Disposition', `attachment; filename="files-${sessionId.slice(0, 8)}.zip"`)
 
     const archive = archiver('zip', { zlib: { level: 9 } })
     archive.pipe(res)
     archive.directory(outputDir, false)
+    archive.on('error', () => { res.end() })
     await archive.finalize()
-  } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+  } catch {
+    res.status(500).type('text').send('Download failed')
   }
 })
 
@@ -184,7 +598,7 @@ app.get('/api/status/:sessionId', async (req, res) => {
     res.json({
       sessionId,
       totalFiles: inputs.length,
-      convertedFiles: outputs.length,
+      doneFiles: outputs.length,
       completed: inputs.length === outputs.length,
     })
   } catch (error) {

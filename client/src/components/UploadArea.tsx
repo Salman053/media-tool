@@ -2,9 +2,11 @@ import { useRef, useState, type DragEvent, type ChangeEvent } from 'react'
 
 interface UploadAreaProps {
   onUpload: (files: FileList | File[]) => void
+  toolName?: string
+  accept?: string
 }
 
-export default function UploadArea({ onUpload }: UploadAreaProps) {
+export default function UploadArea({ onUpload, toolName, accept }: UploadAreaProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
@@ -47,15 +49,15 @@ export default function UploadArea({ onUpload }: UploadAreaProps) {
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
       </span>
-      <div className="upload-title">Drop files here or click to browse</div>
+      <div className="upload-title">{toolName ? `Drop images to ${toolName}` : 'Drop files here or click to browse'}</div>
       <div className="upload-hint">
         Supports JPG, PNG, GIF, WEBP, TIFF, AVIF, BMP, SVG &nbsp;&middot;&nbsp; Up to 100 MB each
       </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept || 'image/*'}
+          multiple
         onChange={handleChange}
         style={{ display: 'none' }}
       />

@@ -4,6 +4,11 @@ import { ImageProcessor } from './processors/image/processor'
 import { WebpConverter } from './processors/image/formats/webp'
 
 import './commands/convert'
+import './commands/resize'
+import './commands/effects'
+import './commands/thumbnail'
+import './commands/video'
+import './commands/document'
 
 function showHelp(): void {
   console.log(`
@@ -13,18 +18,17 @@ usage:
   media-tool <command> [options]
 
 commands:
-  convert   Convert media files between formats
+  convert     Convert media files between formats
+  resize      Resize images to specific dimensions
+  effects     Apply artistic effects (requires ImageMagick)
+  thumbnail   Generate square thumbnails (requires ImageMagick)
+  video       Process video/audio files (requires FFmpeg)
+  document    Convert documents via LibreOffice
 
 options:
-  -o, --output <path>   Output file path
-  -f, --format <fmt>    Target format (default: webp)
-  -q, --quality <num>   Quality 1-100 (default: 80)
   -h, --help            Show this help
 
-examples:
-  media-tool convert image.jpg
-  media-tool convert image.png -o output.webp -q 90
-  media-tool convert photo.tiff -f webp
+use "media-tool <command> --help" for command-specific help
   `)
 }
 

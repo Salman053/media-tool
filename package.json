@@ -1,0 +1,43 @@
+{
+  "name": "media-tool",
+  "version": "0.1.0",
+  "description": "A professional media conversion and processing tool",
+  "type": "module",
+  "bin": {
+    "media-tool": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsup --watch src/server.ts --onSuccess \"node dist/server.js\"",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build:client && npm run build:server",
+    "build:server": "tsup",
+    "build:client": "npm run build --prefix client",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

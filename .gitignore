@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+*.local
+uploads/
+client/dist/
+client/node_modules/

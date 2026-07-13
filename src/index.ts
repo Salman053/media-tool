@@ -9,6 +9,8 @@ import './commands/effects'
 import './commands/thumbnail'
 import './commands/video'
 import './commands/document'
+import './commands/launch'
+import './commands/rename'
 
 function showHelp(): void {
   console.log(`
@@ -24,6 +26,8 @@ commands:
   thumbnail   Generate square thumbnails (requires ImageMagick)
   video       Process video/audio files (requires FFmpeg)
   document    Convert documents via LibreOffice
+  launch      Open multiple URLs in the default browser
+  rename      Rename files in a directory using patterns
 
 options:
   -h, --help            Show this help

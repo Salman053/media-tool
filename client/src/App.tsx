@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
-import type { UploadedFile, ToolMode, ResizeSettings, EffectSettings, ThumbnailSettings, VideoConvertSettings, FrameSettings, DocConvertSettings, ProcessResponse } from './types'
+import type { UploadedFile, ToolMode, ResizeSettings, EffectSettings, ThumbnailSettings, VideoConvertSettings, FrameSettings, DocConvertSettings, RenameRequest, ProcessResponse } from './types'
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, DOCUMENT_EXTENSIONS } from './types'
-import { uploadFiles, convertFiles, resizeFiles, effectsFiles, thumbnailFiles, videoConvertFiles, videoFrameFiles, docConvertFiles, getDownloadAllUrl } from './api'
+import { uploadFiles, convertFiles, resizeFiles, effectsFiles, thumbnailFiles, videoConvertFiles, videoFrameFiles, docConvertFiles, renameFiles, getDownloadAllUrl } from './api'
 import Header2 from './components/Header2'
 import UploadArea from './components/UploadArea'
 import FileGrid from './components/FileGrid'
@@ -12,6 +12,8 @@ import ThumbnailSettingsBar from './components/ThumbnailSettings'
 import VideoConvertSettingsBar from './components/VideoConvertSettings'
 import VideoFrameSettingsBar from './components/VideoFrameSettings'
 import DocSettingsBar from './components/DocSettings'
+import LauncherPanel from './components/LauncherPanel'
+import RenamePanel from './components/RenamePanel'
 import ResultPanel from './components/ResultPanel'
 
 const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
@@ -22,6 +24,8 @@ const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   'video-convert': { label: 'Video Convert', past: 'converted' },
   'video-frames': { label: 'Frames', past: 'extracted' },
   document: { label: 'Document', past: 'converted' },
+  launcher: { label: 'Launcher', past: 'launched' },
+  rename: { label: 'Rename', past: 'renamed' },
 }
 
 function getAccept(mode: ToolMode): string {
@@ -115,6 +119,10 @@ export default function App() {
   const handleVideoFrames = useCallback(() => processFiles(() => videoFrameFiles(sessionId!, frames), 'Extracted'), [sessionId, frames, processFiles])
   const handleDocConvert = useCallback(() => processFiles(() => docConvertFiles(sessionId!, docConv), 'Converted'), [sessionId, docConv, processFiles])
 
+  const handleRename = useCallback((entries: RenameRequest['files']) => {
+    processFiles(() => renameFiles({ sessionId: sessionId!, files: entries }), 'Renamed')
+  }, [sessionId, processFiles])
+
   const handleClear = useCallback(() => { setFiles([]); setSessionId(null) }, [])
 
   const canProcess = files.length > 0 && !processing
@@ -129,7 +137,8 @@ export default function App() {
     mode === 'thumbnail' ? handleThumbnail :
     mode === 'video-convert' ? handleVideoConvert :
     mode === 'video-frames' ? handleVideoFrames :
-    handleDocConvert
+    mode === 'document' ? handleDocConvert :
+    undefined
 
   const uploadToolName =
     mode === 'effects' ? 'apply effects' :
@@ -137,6 +146,7 @@ export default function App() {
     mode === 'video-convert' ? 'convert video/audio' :
     mode === 'video-frames' ? 'extract frames' :
     mode === 'document' ? 'convert documents' :
+    mode === 'rename' ? 'rename files' :
     act.label.toLowerCase()
 
   return (
@@ -149,11 +159,14 @@ export default function App() {
       />
 
       <div className="container">
-        {files.length === 0 && (
+        {mode === 'launcher' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Tab Launcher</span></div>
+            <LauncherPanel />
+          </div>
+        ) : files.length === 0 ? (
           <UploadArea onUpload={handleUpload} toolName={uploadToolName} accept={getAccept(mode)} />
-        )}
-
-        {files.length > 0 && (
+        ) : (
           <>
             <div className="section">
               <div className="section-header">
@@ -162,7 +175,12 @@ export default function App() {
               <FileGrid files={files} />
             </div>
 
-            {!hasResults && (
+            {!hasResults && mode === 'rename' ? (
+              <div className="section">
+                <div className="section-header"><span className="section-title">Rename Files</span></div>
+                <RenamePanel files={files} onRename={handleRename} disabled={processing} />
+              </div>
+            ) : !hasResults ? (
               <>
                 <div className="section">
                   <div className="section-header"><span className="section-title">{act.label} Settings</span></div>
@@ -178,7 +196,7 @@ export default function App() {
                   {processing ? <><span className="spinner" /> Processing...</> : <>{act.label} {files.length > 1 ? `All ${files.length}` : ''}</>}
                 </button>
               </>
-            )}
+            ) : null}
 
             {hasResults && (
               <div className="section">

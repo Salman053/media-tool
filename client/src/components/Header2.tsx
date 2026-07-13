@@ -15,6 +15,8 @@ const MODES: { id: ToolMode; icon: string; label: string }[] = [
   { id: 'video-convert', icon: '▶', label: 'Video' },
   { id: 'video-frames', icon: '▣', label: 'Frames' },
   { id: 'document', icon: '📄', label: 'Document' },
+  { id: 'launcher', icon: '🔗', label: 'Launcher' },
+  { id: 'rename', icon: '✎', label: 'Rename' },
 ]
 
 export default function Header2({ mode, onModeChange, fileCount, onClear }: Header2Props) {

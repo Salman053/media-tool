@@ -1,4 +1,14 @@
-export type ToolMode = 'convert' | 'resize' | 'effects' | 'thumbnail' | 'video-convert' | 'video-frames' | 'document' | 'launcher'
+export type ToolMode = 'convert' | 'resize' | 'effects' | 'thumbnail' | 'video-convert' | 'video-frames' | 'document' | 'launcher' | 'rename'
+
+export interface RenameEntry {
+  originalName: string
+  newName: string
+}
+
+export interface RenameRequest {
+  sessionId: string
+  files: RenameEntry[]
+}
 
 export interface LauncherEntry {
   id: string

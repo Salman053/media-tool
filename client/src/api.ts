@@ -1,4 +1,4 @@
-import type { UploadResponse, ProcessResponse, ResizeSettings, EffectSettings, ThumbnailSettings, VideoConvertSettings, FrameSettings, DocConvertSettings } from './types'
+import type { UploadResponse, ProcessResponse, ResizeSettings, EffectSettings, ThumbnailSettings, VideoConvertSettings, FrameSettings, DocConvertSettings, RenameRequest } from './types'
 
 const API = '/api'
 
@@ -97,6 +97,19 @@ export async function videoConvertFiles(sessionId: string, settings: VideoConver
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(err.error || 'Video conversion failed')
+  }
+  return res.json()
+}
+
+export async function renameFiles(req: RenameRequest): Promise<ProcessResponse> {
+  const res = await fetch(`${API}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || 'Rename failed')
   }
   return res.json()
 }

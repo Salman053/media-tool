@@ -69,7 +69,7 @@ commandRegistry.register({
     const results: Array<{ from: string; to: string; ok: boolean }> = []
 
     for (let i = 0; i < files.length; i++) {
-      const newName = applyPattern(files[i], pattern, i, { start, padding })
+      const newName = applyPattern(files[i], pattern, i, { start, padding } as any)
       const src = path.join(dir, files[i])
       const dst = path.join(dir, newName)
       if (src === dst) {

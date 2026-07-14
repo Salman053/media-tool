@@ -1,4 +1,4 @@
-export type ToolMode = 'convert' | 'resize' | 'effects' | 'thumbnail' | 'video-convert' | 'video-frames' | 'document' | 'launcher' | 'rename'
+export type ToolMode = 'convert' | 'resize' | 'effects' | 'thumbnail' | 'video-convert' | 'video-frames' | 'document' | 'launcher' | 'rename' | 'qr' | 'regex'
 
 export interface RenameEntry {
   originalName: string

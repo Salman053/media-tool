@@ -144,3 +144,26 @@ export async function videoFrameFiles(sessionId: string, settings: FrameSettings
   }
   return res.json()
 }
+
+export async function decodeQrImage(file: File): Promise<{ text: string }> {
+  const form = new FormData()
+  form.append('image', file)
+  const res = await fetch(`${API}/qr/decode`, { method: 'POST', body: form })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || 'Decode failed')
+  }
+  return res.json()
+}
+
+export async function generateQrWithLogo(text: string, logo?: File): Promise<Blob> {
+  const form = new FormData()
+  form.append('text', text)
+  if (logo) form.append('logo', logo)
+  const res = await fetch(`${API}/qr/generate`, { method: 'POST', body: form })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || 'Generation failed')
+  }
+  return res.blob()
+}

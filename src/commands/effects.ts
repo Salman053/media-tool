@@ -52,7 +52,7 @@ commandRegistry.register({
   name: 'effects',
   description: 'Apply artistic effects to images (requires ImageMagick)',
   async run(args: string[]) {
-    const cli = parseEffectsArgs(args)
+    const cli : any = parseEffectsArgs(args)
 
     if (!cli.input) {
       console.error('error: input file is required')

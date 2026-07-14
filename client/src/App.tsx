@@ -15,6 +15,8 @@ import DocSettingsBar from './components/DocSettings'
 import LauncherPanel from './components/LauncherPanel'
 import RenamePanel from './components/RenamePanel'
 import ResultPanel from './components/ResultPanel'
+import QrPanel from './components/QrPanel'
+import RegexPanel from './components/RegexPanel'
 
 const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   convert: { label: 'Convert', past: 'converted' },
@@ -26,6 +28,8 @@ const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   document: { label: 'Document', past: 'converted' },
   launcher: { label: 'Launcher', past: 'launched' },
   rename: { label: 'Rename', past: 'renamed' },
+  qr: { label: 'QR Code', past: 'generated' },
+  regex: { label: 'Regex', past: 'tested' },
 }
 
 function getAccept(mode: ToolMode): string {
@@ -159,7 +163,17 @@ export default function App() {
       />
 
       <div className="container">
-        {mode === 'launcher' ? (
+        {mode === 'regex' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Regex Tester</span></div>
+            <RegexPanel />
+          </div>
+        ) : mode === 'qr' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">QR Code Generator & Reader</span></div>
+            <QrPanel />
+          </div>
+        ) : mode === 'launcher' ? (
           <div className="section">
             <div className="section-header"><span className="section-title">Tab Launcher</span></div>
             <LauncherPanel />

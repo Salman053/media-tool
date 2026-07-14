@@ -23,6 +23,9 @@ import type { ResizeOptions } from './types'
 import type { EffectOpts } from './engines/imagemagick'
 import type { VideoConvertOpts, FrameExtractOpts } from './engines/ffmpeg'
 import type { DocConvertOpts } from './engines/libreoffice'
+import jsQR from 'jsqr'
+import sharp from 'sharp'
+import QRCode from 'qrcode'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -467,6 +470,74 @@ app.post('/api/video/frames', async (req, res) => {
     }
 
     res.json({ sessionId, results })
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/qr/generate', upload.fields([{ name: 'logo', maxCount: 1 }]), async (req, res) => {
+  try {
+    const text = req.body.text as string
+    if (!text?.trim()) {
+      res.status(400).json({ error: 'text is required' })
+      return
+    }
+
+    const qrBuf = await QRCode.toBuffer(text.trim(), {
+      width: 600,
+      margin: 2,
+      color: { dark: '#0f172a', light: '#ffffff' },
+      type: 'png',
+    })
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined
+    const logoFile = files?.logo?.[0]
+
+    if (logoFile) {
+      const logo = await sharp(logoFile.path)
+        .resize(140, 140, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
+        .toBuffer()
+
+      const composited = await sharp(qrBuf)
+        .composite([{ input: logo, gravity: 'centre' }])
+        .png()
+        .toBuffer()
+
+      await fs.unlink(logoFile.path).catch(() => {})
+      res.setHeader('Content-Type', 'image/png')
+      res.send(composited)
+    } else {
+      res.setHeader('Content-Type', 'image/png')
+      res.send(qrBuf)
+    }
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+})
+
+app.post('/api/qr/decode', upload.single('image'), async (req, res) => {
+  try {
+    const file = req.file as Express.Multer.File
+    if (!file) {
+      res.status(400).json({ error: 'No image uploaded' })
+      return
+    }
+
+    const { data, info } = await sharp(file.path)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    const code = jsQR(new Uint8ClampedArray(data), info.width, info.height)
+
+    await fs.unlink(file.path).catch(() => {})
+
+    if (!code) {
+      res.status(400).json({ error: 'No QR code found in image' })
+      return
+    }
+
+    res.json({ text: code.data })
   } catch (error) {
     res.status(500).json({ error: (error as Error).message })
   }

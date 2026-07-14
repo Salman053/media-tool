@@ -17,6 +17,8 @@ const MODES: { id: ToolMode; icon: string; label: string }[] = [
   { id: 'document', icon: '📄', label: 'Document' },
   { id: 'launcher', icon: '🔗', label: 'Launcher' },
   { id: 'rename', icon: '✎', label: 'Rename' },
+  { id: 'qr', icon: '▩', label: 'QR Code' },
+  { id: 'regex', icon: '.*', label: 'Regex' },
 ]
 
 export default function Header2({ mode, onModeChange, fileCount, onClear }: Header2Props) {

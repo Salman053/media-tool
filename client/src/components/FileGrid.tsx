@@ -1,4 +1,5 @@
 import type { UploadedFile } from '../types'
+import { VIDEO_EXTENSIONS } from '../types'
 
 interface FileGridProps {
   files: UploadedFile[]
@@ -23,6 +24,11 @@ function statusLabel(status: UploadedFile['status']): { text: string; className:
   }
 }
 
+function isVideo(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return VIDEO_EXTENSIONS.includes(ext)
+}
+
 export default function FileGrid({ files }: FileGridProps) {
   if (files.length === 0) {
     return (
@@ -42,23 +48,20 @@ export default function FileGrid({ files }: FileGridProps) {
     <div className="file-grid">
       {files.map((file) => {
         const status = statusLabel(file.status)
+        const vid = isVideo(file.originalName)
         return (
           <div key={file.id} className="file-card">
-            {file.previewUrl ? (
-              <img
-                className="file-preview"
-                src={file.previewUrl}
-                alt={file.originalName}
-              />
+            {vid && file.previewUrl ? (
+              <video className="file-preview" src={file.previewUrl} muted controls={false} />
+            ) : file.previewUrl ? (
+              <img className="file-preview" src={file.previewUrl} alt={file.originalName} />
             ) : (
               <div className="file-preview-placeholder">
-                {file.originalName.split('.').pop()?.toUpperCase()}
+                {vid ? '▶' : file.originalName.split('.').pop()?.toUpperCase()}
               </div>
             )}
             <div className="file-info">
-              <div className="file-name" title={file.originalName}>
-                {file.originalName}
-              </div>
+              <div className="file-name" title={file.originalName}>{file.originalName}</div>
               <div className="file-size">{formatSize(file.size)}</div>
               <div className={`file-status ${status.className}`}>
                 {file.status === 'converting' && <span className="spinner" />}

@@ -6,6 +6,19 @@ import { existsSync } from 'node:fs'
 import archiver from 'archiver'
 
 export function registerDownloadRoutes(app: Express, _upload: ReturnType<typeof multer>, uploadDir: string) {
+  app.get('/api/download/:sessionId/favicon/:filename', async (req, res) => {
+    try {
+      const { sessionId, filename } = req.params
+      const decoded = decodeURIComponent(filename)
+      const filePath = path.join(uploadDir, sessionId, 'output', 'favicon', decoded)
+
+      if (!existsSync(filePath)) { res.status(404).type('text').send('File not found'); return }
+      res.download(filePath, decoded)
+    } catch {
+      res.status(500).type('text').send('Download failed')
+    }
+  })
+
   app.get('/api/download/:sessionId/:filename', async (req, res) => {
     try {
       const { sessionId, filename } = req.params

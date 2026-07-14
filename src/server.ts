@@ -16,6 +16,7 @@ import { registerDocumentRoutes } from './routes/document'
 import { registerQrRoutes } from './routes/qr'
 import { registerRenameRoutes } from './routes/rename'
 import { registerDownloadRoutes } from './routes/download'
+import { registerFaviconRoutes } from './routes/favicon'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -46,6 +47,7 @@ registerDocumentRoutes(app, upload, UPLOAD_DIR)
 registerQrRoutes(app, upload, UPLOAD_DIR)
 registerRenameRoutes(app, upload, UPLOAD_DIR)
 registerDownloadRoutes(app, upload, UPLOAD_DIR)
+registerFaviconRoutes(app, upload, UPLOAD_DIR)
 
 // ── Session cleanup every hour ──
 setInterval(async () => {

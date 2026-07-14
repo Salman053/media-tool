@@ -17,6 +17,15 @@ import RenamePanel from './components/RenamePanel'
 import ResultPanel from './components/ResultPanel'
 import QrPanel from './components/QrPanel'
 import RegexPanel from './components/RegexPanel'
+import JwtPanel from './components/JwtPanel'
+import TimestampPanel from './components/TimestampPanel'
+import FaviconPanel from './components/FaviconPanel'
+import MockupPanel from './components/MockupPanel'
+import PdfToImagePanel from './components/PdfToImagePanel'
+import BlurFocusPanel from './components/BlurFocusPanel'
+import EmojiMosaicPanel from './components/EmojiMosaicPanel'
+import WaveformPanel from './components/WaveformPanel'
+import CalligraphyPanel from './components/CalligraphyPanel'
 
 const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   convert: { label: 'Convert', past: 'converted' },
@@ -30,6 +39,15 @@ const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   rename: { label: 'Rename', past: 'renamed' },
   qr: { label: 'QR Code', past: 'generated' },
   regex: { label: 'Regex', past: 'tested' },
+  jwt: { label: 'JWT', past: 'decoded' },
+  timestamp: { label: 'Timestamp', past: 'converted' },
+  favicon: { label: 'Favicon', past: 'generated' },
+  mockup: { label: 'Mockup', past: 'generated' },
+  'pdf-to-image': { label: 'PDF→Image', past: 'converted' },
+  'blur-focus': { label: 'Blur/Focus', past: 'processed' },
+  'emoji-mosaic': { label: 'Emoji Mosaic', past: 'generated' },
+  'waveform': { label: 'Waveform', past: 'generated' },
+  'calligraphy': { label: 'Calligraphy', past: 'drawn' },
 }
 
 function getAccept(mode: ToolMode): string {
@@ -157,7 +175,6 @@ export default function App() {
     act.label.toLowerCase()
 
 
-    console.log(resize)
   return (
     <div className="app-layout">
       <Header2
@@ -168,7 +185,37 @@ export default function App() {
       />
 
       <div className="container">
-        {mode === 'regex' ? (
+        {mode === 'blur-focus' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Blur / Focus Effect</span></div>
+            <BlurFocusPanel />
+          </div>
+        ) : mode === 'pdf-to-image' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">PDF to Image Converter</span></div>
+            <PdfToImagePanel />
+          </div>
+        ) : mode === 'mockup' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Mockup Generator</span></div>
+            <MockupPanel />
+          </div>
+        ) : mode === 'favicon' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Favicon Generator</span></div>
+            <FaviconPanel />
+          </div>
+        ) : mode === 'timestamp' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Timestamp Converter</span></div>
+            <TimestampPanel />
+          </div>
+        ) : mode === 'jwt' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">JWT Debugger</span></div>
+            <JwtPanel />
+          </div>
+        ) : mode === 'regex' ? (
           <div className="section">
             <div className="section-header"><span className="section-title">Regex Tester</span></div>
             <RegexPanel />
@@ -177,6 +224,21 @@ export default function App() {
           <div className="section">
             <div className="section-header"><span className="section-title">QR Code Generator & Reader</span></div>
             <QrPanel />
+          </div>
+        ) : mode === 'emoji-mosaic' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Emoji Mosaic Generator</span></div>
+            <EmojiMosaicPanel />
+          </div>
+        ) : mode === 'waveform' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Waveform Generator</span></div>
+            <WaveformPanel />
+          </div>
+        ) : mode === 'calligraphy' ? (
+          <div className="section">
+            <div className="section-header"><span className="section-title">Calligraphy / Handwriting</span></div>
+            <CalligraphyPanel />
           </div>
         ) : mode === 'launcher' ? (
           <div className="section">

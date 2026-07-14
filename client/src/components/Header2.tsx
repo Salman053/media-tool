@@ -19,6 +19,15 @@ const MODES: { id: ToolMode; icon: string; label: string }[] = [
   { id: 'rename', icon: '✎', label: 'Rename' },
   { id: 'qr', icon: '▩', label: 'QR Code' },
   { id: 'regex', icon: '.*', label: 'Regex' },
+  { id: 'jwt', icon: '🔐', label: 'JWT' },
+  { id: 'timestamp', icon: '⏱', label: 'Timestamp' },
+  { id: 'favicon', icon: '◎', label: 'Favicon' },
+  { id: 'mockup', icon: '🖼', label: 'Mockup' },
+  { id: 'pdf-to-image', icon: '📄', label: 'PDF→Img' },
+  { id: 'blur-focus', icon: '◎', label: 'Blur/Focus' },
+  { id: 'emoji-mosaic', icon: '😊', label: 'Emoji Mosaic' },
+  { id: 'waveform', icon: '〰', label: 'Waveform' },
+  { id: 'calligraphy', icon: '🖊', label: 'Calligraphy' },
 ]
 
 export default function Header2({ mode, onModeChange, fileCount, onClear }: Header2Props) {

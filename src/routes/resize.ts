@@ -14,7 +14,6 @@ export function registerResizeRoutes(app: Express, _upload: ReturnType<typeof mu
     
     try {
       const body = req.body as { sessionId: string; width?: number; height?: number; fit?: string; withoutEnlargement?: boolean; format?: string; quality?: number }
-    console.log(body);
       const { sessionId, width, height, fit, withoutEnlargement, format } = body
       const quality = body.quality ?? 85
 

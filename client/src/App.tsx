@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import type { UploadedFile, ToolMode, ResizeSettings, EffectSettings, ThumbnailSettings, VideoConvertSettings, FrameSettings, DocConvertSettings, RenameRequest, ProcessResponse } from './types'
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, DOCUMENT_EXTENSIONS } from './types'
-import { uploadFiles, convertFiles, resizeFiles, effectsFiles, thumbnailFiles, videoConvertFiles, videoFrameFiles, docConvertFiles, renameFiles, getDownloadAllUrl } from './api'
+import { uploadFiles, convertFiles, resizeFiles, effectsFiles, thumbnailFiles, videoConvertFiles, videoFrameFiles, docConvertFiles, renameFiles, getDownloadAllUrl, clearSession } from './api'
 import Header2 from './components/Header2'
 import UploadArea from './components/UploadArea'
 import FileGrid from './components/FileGrid'
@@ -34,7 +34,7 @@ const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
 
 function getAccept(mode: ToolMode): string {
   if (mode === 'video-convert' || mode === 'video-frames') return 'video/*'
-  if (mode === 'document') return '.pdf,.docx,.doc,.odt,.txt,.html,.htm,.rtf,.epub,.xlsx,.xls,.ods,.pptx,.ppt,.odp,.csv'
+  if (mode === 'document') return '.pdf,.docx,.doc,.odt,.txt,.html,.htm,.rtf,.epub,.xlsx,.xls,.ods,.pptx,.ppt,.odp,.csv,.xml'
   return 'image/*'
 }
 
@@ -127,7 +127,10 @@ export default function App() {
     processFiles(() => renameFiles({ sessionId: sessionId!, files: entries }), 'Renamed')
   }, [sessionId, processFiles])
 
-  const handleClear = useCallback(() => { setFiles([]); setSessionId(null) }, [])
+  const handleClear = useCallback(() => {
+    if (sessionId) clearSession(sessionId).catch(() => {})
+    setFiles([]); setSessionId(null)
+  }, [sessionId])
 
   const canProcess = files.length > 0 && !processing
   const hasResults = files.some((f) => f.status === 'done')
@@ -153,6 +156,8 @@ export default function App() {
     mode === 'rename' ? 'rename files' :
     act.label.toLowerCase()
 
+
+    console.log(resize)
   return (
     <div className="app-layout">
       <Header2

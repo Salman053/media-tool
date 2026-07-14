@@ -80,6 +80,10 @@ export function getDownloadAllUrl(sessionId: string): string {
   return `${API}/download-all/${sessionId}`
 }
 
+export async function clearSession(sessionId: string): Promise<void> {
+  await fetch(`${API}/session/${sessionId}`, { method: 'DELETE' })
+}
+
 export async function videoConvertFiles(sessionId: string, settings: VideoConvertSettings): Promise<ProcessResponse> {
   const res = await fetch(`${API}/video/convert`, {
     method: 'POST',

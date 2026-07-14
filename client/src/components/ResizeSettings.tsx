@@ -16,6 +16,15 @@ const FORMATS = [
   { value: 'avif', label: 'AVIF' },
 ]
 
+const PRESETS = [
+  { label: 'Avatar', w: 150, h: 150 },
+  { label: 'Thumb', w: 300, h: 300 },
+  { label: 'Small', w: 640, h: 480 },
+  { label: 'HD', w: 1280, h: 720 },
+  { label: 'Full HD', w: 1920, h: 1080 },
+  { label: 'Square', w: 1080, h: 1080 },
+]
+
 interface ResizeSettingsProps {
   settings: ResizeSettings
   onChange: (settings: ResizeSettings) => void
@@ -26,8 +35,23 @@ export default function ResizeSettingsBar({ settings, onChange }: ResizeSettings
     onChange({ ...settings, ...partial })
   }
 
+
   return (
     <div className="settings-bar">
+      <div className="settings-group" style={{ width: '100%', marginBottom: 4 }}>
+        <span className="settings-label">Presets:</span>
+        {PRESETS.map((p) => (
+          <button
+            key={p.label}
+            className={`btn btn-sm ${settings.width === String(p.w) && settings.height === String(p.h) ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => update({ width: String(p.w), height: String(p.h) })}
+            style={{ fontSize: 10, padding: '2px 6px' }}
+          >
+            {p.label} ({p.w}x{p.h})
+          </button>
+        ))}
+      </div>
+
       <div className="settings-group">
         <span className="settings-label">Width:</span>
         <input
@@ -77,7 +101,7 @@ export default function ResizeSettingsBar({ settings, onChange }: ResizeSettings
           onChange={(e) => update({ format: e.target.value })}
         >
           {FORMATS.map((f) => (
-            <option selected key={f.value} value={f.value}>{f.label}</option>
+            <option key={f.value} value={f.value}>{f.label}</option>
           ))}
         </select>
       </div>

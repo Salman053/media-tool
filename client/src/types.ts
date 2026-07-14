@@ -93,7 +93,7 @@ export const DEFAULT_LAUNCHER_PRESETS: Record<string, LauncherEntry[]> = {
 
 export const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'avif', 'svg']
 export const VIDEO_EXTENSIONS = ['mp4', 'webm', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'm4v', 'mpg', 'mpeg', '3gp', 'ogv']
-export const DOCUMENT_EXTENSIONS = ['pdf', 'docx', 'doc', 'odt', 'txt', 'html', 'htm', 'rtf', 'epub', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp', 'csv']
+export const DOCUMENT_EXTENSIONS = ['pdf', 'docx', 'doc', 'odt', 'txt', 'html', 'htm', 'rtf', 'epub', 'xlsx', 'xls', 'ods', 'pptx', 'ppt', 'odp', 'csv', 'xml']
 
 export interface VideoConvertSettings {
   format: string

@@ -97,6 +97,11 @@ const FORMAT_MAP: Record<string, string> = {
   jpg: 'jpg',
   jpeg: 'jpg',
   svg: 'svg',
+  xml: 'xml',
+  bmp: 'bmp',
+  tiff: 'tiff',
+  tif: 'tiff',
+  gif: 'gif',
 }
 
 export interface DocConvertOpts {

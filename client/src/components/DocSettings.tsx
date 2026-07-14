@@ -24,6 +24,10 @@ const FORMATS = [
   { value: 'png', label: 'PNG Image' },
   { value: 'jpg', label: 'JPEG Image' },
   { value: 'svg', label: 'SVG Vector' },
+  { value: 'xml', label: 'Word 2003 XML' },
+  { value: 'bmp', label: 'BMP Image' },
+  { value: 'tiff', label: 'TIFF Image' },
+  { value: 'gif', label: 'GIF Image' },
 ]
 
 export default function DocSettingsBar({ settings, onChange }: Props) {

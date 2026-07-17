@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import type { UploadedFile, ToolMode, ResizeSettings, EffectSettings, ThumbnailSettings, VideoConvertSettings, FrameSettings, DocConvertSettings, RenameRequest, ProcessResponse } from './types'
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, DOCUMENT_EXTENSIONS } from './types'
-import { uploadFiles, convertFiles, resizeFiles, effectsFiles, thumbnailFiles, videoConvertFiles, videoFrameFiles, docConvertFiles, renameFiles, getDownloadAllUrl, clearSession } from './api'
+import { uploadFiles, convertFiles, resizeFiles, effectsFiles, thumbnailFiles, videoConvertFiles, videoFrameFiles, docConvertFiles, renameFiles, bgRemoveFiles, getDownloadAllUrl, clearSession } from './api'
 import Header2 from './components/Header2'
 import UploadArea from './components/UploadArea'
 import FileGrid from './components/FileGrid'
@@ -26,6 +26,7 @@ import BlurFocusPanel from './components/BlurFocusPanel'
 import EmojiMosaicPanel from './components/EmojiMosaicPanel'
 import WaveformPanel from './components/WaveformPanel'
 import CalligraphyPanel from './components/CalligraphyPanel'
+import BgRemoveSettings from './components/BgRemoveSettings'
 
 const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   convert: { label: 'Convert', past: 'converted' },
@@ -48,6 +49,7 @@ const MODE_LABELS: Record<ToolMode, { label: string; past: string }> = {
   'emoji-mosaic': { label: 'Emoji Mosaic', past: 'generated' },
   'waveform': { label: 'Waveform', past: 'generated' },
   'calligraphy': { label: 'Calligraphy', past: 'drawn' },
+  'bg-remove': { label: 'Bg Remove', past: 'removed' },
 }
 
 function getAccept(mode: ToolMode): string {
@@ -79,6 +81,7 @@ export default function App() {
   const [videoConv, setVideoConv] = useState<VideoConvertSettings>({ format: '', videoCodec: '', audioCodec: '', bitrate: '', fps: '', resolution: '' })
   const [frames, setFrames] = useState<FrameSettings>({ fps: '', count: '', quality: 3 })
   const [docConv, setDocConv] = useState<DocConvertSettings>({ format: 'pdf' })
+  const [bgFormat, setBgFormat] = useState('png')
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const notifTimeout = useRef<ReturnType<typeof setTimeout>>()
 
@@ -140,6 +143,7 @@ export default function App() {
   const handleVideoConvert = useCallback(() => processFiles(() => videoConvertFiles(sessionId!, videoConv), 'Converted'), [sessionId, videoConv, processFiles])
   const handleVideoFrames = useCallback(() => processFiles(() => videoFrameFiles(sessionId!, frames), 'Extracted'), [sessionId, frames, processFiles])
   const handleDocConvert = useCallback(() => processFiles(() => docConvertFiles(sessionId!, docConv), 'Converted'), [sessionId, docConv, processFiles])
+  const handleBgRemove = useCallback(() => processFiles(() => bgRemoveFiles(sessionId!, bgFormat), 'Removed'), [sessionId, bgFormat, processFiles])
 
   const handleRename = useCallback((entries: RenameRequest['files']) => {
     processFiles(() => renameFiles({ sessionId: sessionId!, files: entries }), 'Renamed')
@@ -163,6 +167,7 @@ export default function App() {
     mode === 'video-convert' ? handleVideoConvert :
     mode === 'video-frames' ? handleVideoFrames :
     mode === 'document' ? handleDocConvert :
+    mode === 'bg-remove' ? handleBgRemove :
     undefined
 
   const uploadToolName =
@@ -172,6 +177,7 @@ export default function App() {
     mode === 'video-frames' ? 'extract frames' :
     mode === 'document' ? 'convert documents' :
     mode === 'rename' ? 'rename files' :
+    mode === 'bg-remove' ? 'remove background from' :
     act.label.toLowerCase()
 
 
@@ -272,6 +278,7 @@ export default function App() {
                   {mode === 'video-convert' && <VideoConvertSettingsBar settings={videoConv} onChange={setVideoConv} />}
                   {mode === 'video-frames' && <VideoFrameSettingsBar settings={frames} onChange={setFrames} />}
                   {mode === 'document' && <DocSettingsBar settings={docConv} onChange={setDocConv} />}
+                  {mode === 'bg-remove' && <BgRemoveSettings format={bgFormat} onFormatChange={setBgFormat} />}
                 </div>
                 <button className="btn btn-primary btn-action" disabled={!canProcess} onClick={handleAction}>
                   {processing ? <><span className="spinner" /> Processing...</> : <>{act.label} {files.length > 1 ? `All ${files.length}` : ''}</>}

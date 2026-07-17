@@ -28,6 +28,7 @@ const MODES: { id: ToolMode; icon: string; label: string }[] = [
   { id: 'emoji-mosaic', icon: '😊', label: 'Emoji Mosaic' },
   { id: 'waveform', icon: '〰', label: 'Waveform' },
   { id: 'calligraphy', icon: '🖊', label: 'Calligraphy' },
+  { id: 'bg-remove', icon: '🎯', label: 'Bg Remove' },
 ]
 
 export default function Header2({ mode, onModeChange, fileCount, onClear }: Header2Props) {

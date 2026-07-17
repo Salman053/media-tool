@@ -118,6 +118,19 @@ export async function renameFiles(req: RenameRequest): Promise<ProcessResponse> 
   return res.json()
 }
 
+export async function bgRemoveFiles(sessionId: string, format: string): Promise<ProcessResponse> {
+  const res = await fetch(`${API}/bg-remove`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, format }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || 'Bg remove failed')
+  }
+  return res.json()
+}
+
 export async function docConvertFiles(sessionId: string, settings: DocConvertSettings): Promise<ProcessResponse> {
   const res = await fetch(`${API}/document/convert`, {
     method: 'POST',
